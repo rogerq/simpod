@@ -24,6 +24,13 @@ uint16_t chc[NCH]; /* channels cache */
 uint8_t fsc;  /* fail safe cache */
 uint16_t lfc;  /* lost frames cache */
 
+/* For scaling SBUS values to JOYSTICK values */
+#define SBUS_MIN  352
+#define SBUS_MAX  1696
+#define JOYSTICK_MIN  0
+#define JOYSTICK_MAX  1023
+uint16_t chs[NCH]; /* scaled values 0 to 1023 */
+
 void myprintf(const char *format, ...) {
   #define BUFSZ 100
   char buf[BUFSZ];
@@ -46,9 +53,9 @@ void setup() {
   /* UART for debug messages */
   Serial.begin(115200);
   myprintf("sbus test\n");
-
+  Joystick.useManualSend(true);
   sbus_rx.begin();
-  myprintf("sbus initialized\n");
+  myprintf("initialized\n");
 }
 
 void loop() {
@@ -56,11 +63,23 @@ void loop() {
 
   /* get a SBUS packet from receiver */
   if(sbus_rx.read(&ch[0], &fail_safe, &lost_frames)) {
-    /* check if anything changed and dump to UART */
+    /* check if anything changed and send to Joystick */
     if (memcmp(ch, chc, NCH * sizeof(ch[0])) || fail_safe != fsc || lost_frames != lfc) {
+      /* map SBUS values to JOYSTICK values */
+      for (i = 0; i < NCH; i++) {
+        chs[i] = map(ch[i], SBUS_MIN, SBUS_MAX, JOYSTICK_MIN, JOYSTICK_MAX);
+      }
+
+      /* Send to Joystick ASAP for min. latency */
+      Joystick.Zrotate(chs[0]); /* AIL */
+      Joystick.Z(chs[1]); /* ELE */
+      Joystick.Y(chs[2]); /* THR */
+      Joystick.X(chs[3]); /* RUD */
+      Joystick.send_now();
+
       myprintf("F:%d L:%-5d ", fail_safe, lost_frames);
       for (i = 0; i < 8; i++) {
-        myprintf("CH%d:%-5d ", i,ch[i]);
+        myprintf("CH%d:%-5d:%-4d ", i, ch[i], chs[i]);
       }
       myprintf("\n");
     }

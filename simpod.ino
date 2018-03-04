@@ -12,6 +12,8 @@
 
 #include "SBUS.h"
 
+/* #define DEBUG 1 */
+
 /* receiver is on Serial port 1 */
 SBUS sbus_rx(Serial1);
 
@@ -31,6 +33,7 @@ uint16_t lfc;  /* lost frames cache */
 #define JOYSTICK_MAX  1023
 uint16_t chs[NCH]; /* scaled values 0 to 1023 */
 
+#ifdef DEBUG
 void myprintf(const char *format, ...) {
   #define BUFSZ 100
   char buf[BUFSZ];
@@ -48,10 +51,15 @@ void myprintf(const char *format, ...) {
     Serial.write(*p);
   }
 }
+#else
+static inline void myprintf(const char *format, ...) { }
+#endif  /* DEBUG */
 
 void setup() {
   /* UART for debug messages */
+  #ifdef DEBUG
   Serial.begin(115200);
+  #endif
   myprintf("sbus test\n");
   Joystick.useManualSend(true);
   sbus_rx.begin();

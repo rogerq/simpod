@@ -83,6 +83,7 @@ void loop() {
       Joystick.Z(chs[1]); /* ELE */
       Joystick.Y(chs[2]); /* THR */
       Joystick.X(chs[3]); /* RUD */
+      Joystick.button(1, chs[4] < 255 ? 0 : 1); /* Thr hold */
       Joystick.send_now();
 
       myprintf("F:%d L:%-5d ", fail_safe, lost_frames);
@@ -98,4 +99,3 @@ void loop() {
     lfc = lost_frames;
   }
 }
-
